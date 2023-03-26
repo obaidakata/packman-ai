@@ -112,34 +112,35 @@ def depthFirstSearch(problem):
 
         for child in problem.getSuccessors(currentPoint):
             childPoint, childDirection, childCost = child
+            # TODO: check why checking is childPoint is already in path gives wrong solutions (1)
             if childPoint not in explored and child not in frontier.list:
                 path[childPoint] = currentNude
                 frontier.push(child)
 
 
-def draft(problem):
-
-    currentNude = problem.getStartState()
-    if problem.isGoalState(currentNude):
-        return []
-
-    frontier = util.Stack()
-    frontier.push(currentNude)
-    explored = set()
-    path = {}
-    while not frontier.isEmpty():
-        currentNude = frontier.pop()
-        explored.add(getNodeXYPoint(currentNude))
-        for child in problem.getSuccessors(getNodeXYPoint(currentNude)):
-            childPoint, childDirection, childCost = child
-            if childPoint not in explored and child not in frontier.list:
-                path[childPoint] = currentNude
-                if problem.isGoalState(childPoint):
-                    pathOrder = buildReveredListFromPath(childPoint, path)
-                    solution = [*extracDirectionsFromPath(pathOrder), childDirection]
-                    # print(solution)
-                    return solution
-                frontier.push(child)
+# def draft(problem): # doesn't work
+#
+#     currentNude = problem.getStartState()
+#     if problem.isGoalState(currentNude):
+#         return []
+#
+#     frontier = util.Stack()
+#     frontier.push(currentNude)
+#     explored = set()
+#     path = {}
+#     while not frontier.isEmpty():
+#         currentNude = frontier.pop()
+#         explored.add(getNodeXYPoint(currentNude))
+#         for child in problem.getSuccessors(getNodeXYPoint(currentNude)):
+#             childPoint, childDirection, childCost = child
+#             if childPoint not in explored and child not in frontier.list:
+#                 path[childPoint] = currentNude
+#                 if problem.isGoalState(childPoint):
+#                     pathOrder = buildReveredListFromPath(childPoint, path)
+#                     solution = [*extracDirectionsFromPath(pathOrder), childDirection]
+#                     # print(solution)
+#                     return solution
+#                 frontier.push(child)
 
 def extracDirectionsFromPath(path_order):
     res = []
@@ -201,8 +202,30 @@ def listToQueue(items):
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    currentNude = problem.getStartState()
+    if problem.isGoalState(currentNude):
+        return []
+
+    frontier = util.Queue()
+    frontier.push(currentNude)
+    explored = set()
+    path = {}
+    while not frontier.isEmpty():
+        currentNude = frontier.pop()
+        currentPoint = getNodeXYPoint(currentNude)
+        explored.add(currentPoint)
+
+        if problem.isGoalState(currentPoint):
+            currentDirection = currentNude[1]
+            pathOrder = buildReveredListFromPath(currentPoint, path)
+            solution = [*extracDirectionsFromPath(pathOrder), currentDirection]
+            return solution
+
+        for child in problem.getSuccessors(currentPoint):
+            childPoint, childDirection, childCost = child
+            if childPoint not in explored and child not in frontier.list and childPoint not in path:
+                path[childPoint] = currentNude
+                frontier.push(child)
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
