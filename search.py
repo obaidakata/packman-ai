@@ -16,8 +16,11 @@
 In search.py, you will implement generic search algorithms which are called by
 Pacman agents (in searchAgents.py).
 """
+import traceback
 
 import util
+from game import Directions
+
 
 class SearchProblem:
     """
@@ -70,7 +73,8 @@ def tinyMazeSearch(problem):
     from game import Directions
     s = Directions.SOUTH
     w = Directions.WEST
-    return  [s, s, w, s, w, w, s, w]
+    return [s, s, w, s, w, w, s, w]
+
 
 def depthFirstSearch(problem):
     """
@@ -86,8 +90,114 @@ def depthFirstSearch(problem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    currentNude = problem.getStartState()
+    if problem.isGoalState(currentNude):
+        return []
+
+    frontier = util.Stack()
+    frontier.push(currentNude)
+    explored = set()
+    path = {}
+    while not frontier.isEmpty():
+        currentNude = frontier.pop()
+        currentPoint = getNodeXYPoint(currentNude)
+        explored.add(currentPoint)
+
+        if problem.isGoalState(currentPoint):
+            currentDirection = currentNude[1]
+            pathOrder = buildReveredListFromPath(currentPoint, path)
+            solution = [*extracDirectionsFromPath(pathOrder), currentDirection]
+            return solution
+
+        for child in problem.getSuccessors(currentPoint):
+            childPoint, childDirection, childCost = child
+            if childPoint not in explored and child not in frontier.list:
+                path[childPoint] = currentNude
+                frontier.push(child)
+
+
+def draft(problem):
+
+    currentNude = problem.getStartState()
+    if problem.isGoalState(currentNude):
+        return []
+
+    frontier = util.Stack()
+    frontier.push(currentNude)
+    explored = set()
+    path = {}
+    while not frontier.isEmpty():
+        currentNude = frontier.pop()
+        explored.add(getNodeXYPoint(currentNude))
+        for child in problem.getSuccessors(getNodeXYPoint(currentNude)):
+            childPoint, childDirection, childCost = child
+            if childPoint not in explored and child not in frontier.list:
+                path[childPoint] = currentNude
+                if problem.isGoalState(childPoint):
+                    pathOrder = buildReveredListFromPath(childPoint, path)
+                    solution = [*extracDirectionsFromPath(pathOrder), childDirection]
+                    # print(solution)
+                    return solution
+                frontier.push(child)
+
+def extracDirectionsFromPath(path_order):
+    res = []
+    for action in path_order:
+        if len(action) == 3:
+            res.append(getNodeDirection(action))
+    return res
+
+def getNodeDirection(node):
+    return node[1]
+def getNodeXYPoint(node):
+    if type(node) is tuple:
+        if len(node) == 2:
+            return node
+        else:
+            return node[0]
+    else:
+        return node
+
+
+def printGraph(problem):
+    if problem is not None:
+        explored = set()
+        printNode(problem.getStartState(), problem, explored)
+
+def printNode(node, problem, explored):
+    if node is not None:
+        print('node', node)
+        explored.add(node)
+        nodeSuccessors = problem.getSuccessors(node)
+        print(nodeSuccessors)
+        for node in nodeSuccessors:
+            # print('node[0]', node[0], 'successors', problem.getSuccessors(node[0]))
+            if node[0] not in explored:
+                printNode(node[0], problem, explored)
+            # else:
+            #     print(node[0], 'is in explored', explored)
+
+def buildReveredListFromPath(goalNode, path):
+    currentNode = goalNode
+    pathOrder = []
+    while True:
+        pathOrder.append(currentNode)
+        currentPoint = getNodeXYPoint(currentNode)
+        if currentPoint in path:
+            currentNode = path[currentPoint]
+        else:
+            break
+    pathOrder.reverse()
+    return pathOrder
+
+
+def listToQueue(items):
+    queue = util.Queue()
+    for item in items:
+        queue.push(item)
+    return queue
+
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
@@ -99,12 +209,14 @@ def uniformCostSearch(problem):
     "*** YOUR CODE HERE ***"
     util.raiseNotDefined()
 
+
 def nullHeuristic(state, problem=None):
     """
     A heuristic function estimates the cost from the current state to the nearest
     goal in the provided SearchProblem.  This heuristic is trivial.
     """
     return 0
+
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
