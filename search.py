@@ -98,25 +98,20 @@ def depthFirstSearch(problem):
     frontier = util.Stack()
     frontier.push(currentNude)
     explored = set()
-    path = {}
+    nodeToParentNode = {}
     while not frontier.isEmpty():
         currentNude = frontier.pop()
         currentPoint = getNodeXYPoint(currentNude)
         explored.add(currentPoint)
 
         if problem.isGoalState(currentPoint):
-            currentDirection = currentNude[1]
-            pathOrder = buildReveredListFromPath(currentPoint, path)
-            solution = [*extracDirectionsFromPath(pathOrder), currentDirection]
-            return solution
+            return buildSolution(currentNude, nodeToParentNode)
 
         for child in problem.getSuccessors(currentPoint):
             childPoint, childDirection, childCost = child
-            # TODO: check why checking is childPoint is already in path gives wrong solutions (1)
-            if childPoint not in explored and child not in frontier.list:
-                path[childPoint] = currentNude
+            if childPoint not in explored:
+                nodeToParentNode[childPoint] = currentNude
                 frontier.push(child)
-
 
 # def draft(problem): # doesn't work
 #
@@ -146,11 +141,10 @@ def extracDirectionsFromPath(path_order):
     res = []
     for action in path_order:
         if len(action) == 3:
-            res.append(getNodeDirection(action))
+            (_, nodeDirection, _) = action
+            res.append(nodeDirection)
     return res
 
-def getNodeDirection(node):
-    return node[1]
 def getNodeXYPoint(node):
     if type(node) is tuple:
         if len(node) == 2:
@@ -159,25 +153,6 @@ def getNodeXYPoint(node):
             return node[0]
     else:
         return node
-
-
-def printGraph(problem):
-    if problem is not None:
-        explored = set()
-        printNode(problem.getStartState(), problem, explored)
-
-def printNode(node, problem, explored):
-    if node is not None:
-        print('node', node)
-        explored.add(node)
-        nodeSuccessors = problem.getSuccessors(node)
-        print(nodeSuccessors)
-        for node in nodeSuccessors:
-            # print('node[0]', node[0], 'successors', problem.getSuccessors(node[0]))
-            if node[0] not in explored:
-                printNode(node[0], problem, explored)
-            # else:
-            #     print(node[0], 'is in explored', explored)
 
 def buildReveredListFromPath(goalNode, path):
     currentNode = goalNode
@@ -192,13 +167,11 @@ def buildReveredListFromPath(goalNode, path):
     pathOrder.reverse()
     return pathOrder
 
-
 def listToQueue(items):
     queue = util.Queue()
     for item in items:
         queue.push(item)
     return queue
-
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
@@ -209,28 +182,86 @@ def breadthFirstSearch(problem):
     frontier = util.Queue()
     frontier.push(currentNude)
     explored = set()
-    path = {}
+    nodeToParentNode = {}
     while not frontier.isEmpty():
         currentNude = frontier.pop()
         currentPoint = getNodeXYPoint(currentNude)
         explored.add(currentPoint)
 
         if problem.isGoalState(currentPoint):
-            currentDirection = currentNude[1]
-            pathOrder = buildReveredListFromPath(currentPoint, path)
-            solution = [*extracDirectionsFromPath(pathOrder), currentDirection]
-            return solution
+            return buildSolution(currentNude, nodeToParentNode)
 
         for child in problem.getSuccessors(currentPoint):
             childPoint, childDirection, childCost = child
-            if childPoint not in explored and child not in frontier.list and childPoint not in path:
-                path[childPoint] = currentNude
+            if childPoint not in explored and childPoint not in nodeToParentNode:
+                nodeToParentNode[childPoint] = currentNude
                 frontier.push(child)
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    currentNude = problem.getStartState()
+    currentNodeCost = 0
+
+    frontier = util.PriorityQueue()
+    frontier.push(currentNude, currentNodeCost)
+    explored = set()
+    nodeToParentNode = {}
+    nodeToNodeCost = {currentNude: currentNodeCost}
+    while not frontier.isEmpty():
+        currentNude = frontier.pop()
+        currentPoint = getNodeXYPoint(currentNude)
+        currentNodeCost = nodeToNodeCost[currentPoint]
+        if problem.isGoalState(currentPoint):
+            return buildSolution(currentNude, nodeToParentNode)
+        explored.add(currentPoint)
+
+        for child in problem.getSuccessors(currentPoint):
+            childPoint, childDirection, childCost = child
+            if childPoint not in explored and not isNodeExistsInPriorityQueue(frontier, childPoint):
+                updatePathIfNeeded(childPoint, childCost, currentNodeCost, currentNude, nodeToParentNode,
+                                   nodeToNodeCost)
+                frontier.push(child, childCost + currentNodeCost)
+            elif existsPathWithHigherCost(frontier, childPoint, childCost):
+                updatePathIfNeeded(childPoint, childCost, currentNodeCost, currentNude, nodeToParentNode,
+                                   nodeToNodeCost)
+                frontier.update(child, childCost + currentNodeCost)
+
+def buildSolution(current_nude, node_to_parent_node):
+    (currentPoint, currentDirection, _) = current_nude
+    pathOrder = buildReveredListFromPath(currentPoint, node_to_parent_node)
+    return [*extracDirectionsFromPath(pathOrder), currentDirection]
+
+def updatePathIfNeeded(child_point, child_cost, current_node_cost, current_nude, node_to_parent_node,
+                       node_cost_from_start_state):
+    if child_point not in node_cost_from_start_state or \
+            node_cost_from_start_state[child_point] > current_node_cost + child_cost:
+        node_cost_from_start_state[child_point] = current_node_cost + child_cost
+        node_to_parent_node[child_point] = current_nude
+
+def isNodeExistsInPriorityQueue(priority_queue, childPoint):
+    allItems = [entry[2] for entry in priority_queue.heap]
+    # # item is a tuple of (point, direction, cost),
+    # # we keep only those whose point is equal to the point we are looking for.
+    allChildrenFilter = [x for x in allItems if x[0] == childPoint]
+    return len(allChildrenFilter) > 0
+
+def existsPathWithHigherCostTest():
+    frontier = util.PriorityQueue()
+    frontier.push(((1, 2), 'North', 7), 7)
+    print(existsPathWithHigherCost(frontier, (1, 2), 5))
+    print(existsPathWithHigherCost(frontier, (1, 2), 9))
+
+
+def existsPathWithHigherCost(frontier, childPoint, childCost):
+    # # frontier.heap store tuples entries (priority, count, item), we extract the item.
+    allItems = [entry[2] for entry in frontier.heap]
+    # # item is a tuple of (point, direction, cost),
+    # # we keep only items whose point is equal to the point we are looking for.
+    allChildrenFilter = [x for x in allItems if x[0] == childPoint]
+    if len(allChildrenFilter) > 0:
+        oldChildCost = allChildrenFilter[0][2]
+        return oldChildCost > childCost
+    return False
 
 
 def nullHeuristic(state, problem=None):
