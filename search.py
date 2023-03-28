@@ -108,34 +108,11 @@ def depthFirstSearch(problem):
             return buildSolution(currentNude, nodeToParentNode)
 
         for child in problem.getSuccessors(currentPoint):
-            childPoint, childDirection, childCost = child
+            (childPoint, _, _) = child
             if childPoint not in explored:
                 nodeToParentNode[childPoint] = currentNude
                 frontier.push(child)
 
-# def draft(problem): # doesn't work
-#
-#     currentNude = problem.getStartState()
-#     if problem.isGoalState(currentNude):
-#         return []
-#
-#     frontier = util.Stack()
-#     frontier.push(currentNude)
-#     explored = set()
-#     path = {}
-#     while not frontier.isEmpty():
-#         currentNude = frontier.pop()
-#         explored.add(getNodeXYPoint(currentNude))
-#         for child in problem.getSuccessors(getNodeXYPoint(currentNude)):
-#             childPoint, childDirection, childCost = child
-#             if childPoint not in explored and child not in frontier.list:
-#                 path[childPoint] = currentNude
-#                 if problem.isGoalState(childPoint):
-#                     pathOrder = buildReveredListFromPath(childPoint, path)
-#                     solution = [*extracDirectionsFromPath(pathOrder), childDirection]
-#                     # print(solution)
-#                     return solution
-#                 frontier.push(child)
 
 def extracDirectionsFromPath(path_order):
     res = []
@@ -167,11 +144,6 @@ def buildReveredListFromPath(goalNode, path):
     pathOrder.reverse()
     return pathOrder
 
-def listToQueue(items):
-    queue = util.Queue()
-    for item in items:
-        queue.push(item)
-    return queue
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
@@ -217,13 +189,12 @@ def uniformCostSearch(problem):
 
         for child in problem.getSuccessors(currentPoint):
             childPoint, childDirection, childCost = child
+            totalCost = childCost + currentNodeCost
             if childPoint not in explored and not isNodeExistsInPriorityQueue(frontier, childPoint):
-                updatePathIfNeeded(childPoint, childCost, currentNodeCost, currentNude, nodeToParentNode,
-                                   nodeToNodeCost)
+                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
                 frontier.push(child, childCost + currentNodeCost)
             elif existsPathWithHigherCost(frontier, childPoint, childCost):
-                updatePathIfNeeded(childPoint, childCost, currentNodeCost, currentNude, nodeToParentNode,
-                                   nodeToNodeCost)
+                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
                 frontier.update(child, childCost + currentNodeCost)
 
 def buildSolution(current_nude, node_to_parent_node):
@@ -231,11 +202,11 @@ def buildSolution(current_nude, node_to_parent_node):
     pathOrder = buildReveredListFromPath(currentPoint, node_to_parent_node)
     return [*extracDirectionsFromPath(pathOrder), currentDirection]
 
-def updatePathIfNeeded(child_point, child_cost, current_node_cost, current_nude, node_to_parent_node,
+def updatePathIfNeeded(child_point, total_cost, current_nude, node_to_parent_node,
                        node_cost_from_start_state):
     if child_point not in node_cost_from_start_state or \
-            node_cost_from_start_state[child_point] > current_node_cost + child_cost:
-        node_cost_from_start_state[child_point] = current_node_cost + child_cost
+            node_cost_from_start_state[child_point] > total_cost:
+        node_cost_from_start_state[child_point] = total_cost
         node_to_parent_node[child_point] = current_nude
 
 def isNodeExistsInPriorityQueue(priority_queue, childPoint):
@@ -244,12 +215,6 @@ def isNodeExistsInPriorityQueue(priority_queue, childPoint):
     # # we keep only those whose point is equal to the point we are looking for.
     allChildrenFilter = [x for x in allItems if x[0] == childPoint]
     return len(allChildrenFilter) > 0
-
-def existsPathWithHigherCostTest():
-    frontier = util.PriorityQueue()
-    frontier.push(((1, 2), 'North', 7), 7)
-    print(existsPathWithHigherCost(frontier, (1, 2), 5))
-    print(existsPathWithHigherCost(frontier, (1, 2), 9))
 
 
 def existsPathWithHigherCost(frontier, childPoint, childCost):
@@ -274,9 +239,34 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    problemHeuristic = lambda point: heuristic(point, problem)
 
+    currentNude = problem.getStartState()
+    currentNodeCost = 0
+
+    frontier = util.PriorityQueue()
+    frontier.push(currentNude, currentNodeCost)
+    explored = set()
+    nodeToParentNode = {}
+    nodeToNodeCost = {currentNude: currentNodeCost}
+    while not frontier.isEmpty():
+        currentNude = frontier.pop()
+        currentPoint = getNodeXYPoint(currentNude)
+        currentNodeCost = nodeToNodeCost[currentPoint]
+        if problem.isGoalState(currentPoint):
+            return buildSolution(currentNude, nodeToParentNode)
+        explored.add(currentPoint)
+
+        for child in problem.getSuccessors(currentPoint):
+            childPoint, childDirection, childCost = child
+            totalCost = childCost + currentNodeCost
+            heuristicEstimation = heuristic(childPoint, problem)
+            if childPoint not in explored and not isNodeExistsInPriorityQueue(frontier, childPoint):
+                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
+                frontier.push(child, totalCost + heuristicEstimation)
+            elif existsPathWithHigherCost(frontier, childPoint, childCost):
+                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
+                frontier.update(child, totalCost + heuristicEstimation)
 
 # Abbreviations
 bfs = breadthFirstSearch
