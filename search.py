@@ -91,27 +91,26 @@ def depthFirstSearch(problem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
 
-    currentNude = problem.getStartState()
-    if problem.isGoalState(currentNude):
+    current_node = problem.getStartState()
+    if problem.isGoalState(current_node):
         return []
 
     frontier = util.Stack()
-    frontier.push(currentNude)
     explored = set()
-    nodeToParentNode = {}
+    frontier.push((current_node, (), 1))
+
     while not frontier.isEmpty():
-        currentNude = frontier.pop()
-        currentPoint = getNodeXYPoint(currentNude)
-        explored.add(currentPoint)
-
-        if problem.isGoalState(currentPoint):
-            return buildSolution(currentNude, nodeToParentNode)
-
-        for child in problem.getSuccessors(currentPoint):
-            (childPoint, _, _) = child
-            if childPoint not in explored:
-                nodeToParentNode[childPoint] = currentNude
-                frontier.push(child)
+        current_node = frontier.pop()
+        current_point, current_action, _ = current_node
+        if problem.isGoalState(current_point):
+            return list(current_action)
+        if current_point not in explored:
+            explored.add(current_point)
+            for child in problem.getSuccessors(current_point):
+                childPoint, childDirection, childCost = child
+                if childPoint not in explored:
+                    childDirection = current_action + (childDirection,)
+                    frontier.push((childPoint, childDirection, childCost))
 
 
 def extracDirectionsFromPath(path_order):
@@ -144,30 +143,25 @@ def buildReveredListFromPath(goalNode, path):
     pathOrder.reverse()
     return pathOrder
 
-
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    currentNude = problem.getStartState()
-    if problem.isGoalState(currentNude):
-        return []
-
     frontier = util.Queue()
-    frontier.push(currentNude)
     explored = set()
-    nodeToParentNode = {}
+    frontier.push((problem.getStartState(), (), 1))
+
     while not frontier.isEmpty():
-        currentNude = frontier.pop()
-        currentPoint = getNodeXYPoint(currentNude)
-        explored.add(currentPoint)
+        current_node = frontier.pop()
+        current_point, current_action, _ = current_node
+        if problem.isGoalState(current_point):
+            return list(current_action)
+        if current_point not in explored:
+            explored.add(current_point)
+            for child in problem.getSuccessors(current_point):
+                childPoint, childDirection, childCost = child
+                if childPoint not in explored:
+                    childDirection = current_action + (childDirection,)
+                    frontier.push((childPoint, childDirection, childCost))
 
-        if problem.isGoalState(currentPoint):
-            return buildSolution(currentNude, nodeToParentNode)
-
-        for child in problem.getSuccessors(currentPoint):
-            childPoint, childDirection, childCost = child
-            if childPoint not in explored and childPoint not in nodeToParentNode:
-                nodeToParentNode[childPoint] = currentNude
-                frontier.push(child)
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
@@ -175,7 +169,6 @@ def uniformCostSearch(problem):
     currentNodeCost = 0
 
     frontier = util.PriorityQueue()
-    frontier.push(currentNude, currentNodeCost)
     explored = set()
     nodeToParentNode = {}
     nodeToNodeCost = {currentNude: currentNodeCost}
@@ -239,8 +232,6 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    problemHeuristic = lambda point: heuristic(point, problem)
-
     currentNude = problem.getStartState()
     currentNodeCost = 0
 
@@ -261,12 +252,13 @@ def aStarSearch(problem, heuristic=nullHeuristic):
             childPoint, childDirection, childCost = child
             totalCost = childCost + currentNodeCost
             heuristicEstimation = heuristic(childPoint, problem)
+            cost = totalCost + heuristicEstimation
             if childPoint not in explored and not isNodeExistsInPriorityQueue(frontier, childPoint):
                 updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
-                frontier.push(child, totalCost + heuristicEstimation)
+                frontier.push(child, cost)
             elif existsPathWithHigherCost(frontier, childPoint, childCost):
                 updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
-                frontier.update(child, totalCost + heuristicEstimation)
+                frontier.update(child, cost)
 
 # Abbreviations
 bfs = breadthFirstSearch
