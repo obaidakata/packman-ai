@@ -91,26 +91,27 @@ def depthFirstSearch(problem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
 
-    current_node = problem.getStartState()
-    if problem.isGoalState(current_node):
+    currentNude = problem.getStartState()
+    if problem.isGoalState(currentNude):
         return []
 
     frontier = util.Stack()
+    frontier.push(currentNude)
     explored = set()
-    frontier.push((current_node, (), 1))
-
+    nodeToParentNode = {}
     while not frontier.isEmpty():
-        current_node = frontier.pop()
-        current_point, current_action, _ = current_node
-        if problem.isGoalState(current_point):
-            return list(current_action)
-        if current_point not in explored:
-            explored.add(current_point)
-            for child in problem.getSuccessors(current_point):
-                childPoint, childDirection, childCost = child
-                if childPoint not in explored:
-                    childDirection = current_action + (childDirection,)
-                    frontier.push((childPoint, childDirection, childCost))
+        currentNude = frontier.pop()
+        currentPoint = getNodeXYPoint(currentNude)
+        explored.add(currentPoint)
+
+        if problem.isGoalState(currentPoint):
+            return buildSolution(currentNude, nodeToParentNode)
+
+        for child in problem.getSuccessors(currentPoint):
+            (childPoint, _, _) = child
+            if childPoint not in explored:
+                nodeToParentNode[childPoint] = currentNude
+                frontier.push(child)
 
 
 def extracDirectionsFromPath(path_order):
@@ -145,23 +146,27 @@ def buildReveredListFromPath(goalNode, path):
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
+    currentNude = problem.getStartState()
+    if problem.isGoalState(currentNude):
+        return []
+
     frontier = util.Queue()
+    frontier.push(currentNude)
     explored = set()
-    frontier.push((problem.getStartState(), (), 1))
-
+    nodeToParentNode = {}
     while not frontier.isEmpty():
-        current_node = frontier.pop()
-        current_point, current_action, _ = current_node
-        if problem.isGoalState(current_point):
-            return list(current_action)
-        if current_point not in explored:
-            explored.add(current_point)
-            for child in problem.getSuccessors(current_point):
-                childPoint, childDirection, childCost = child
-                if childPoint not in explored:
-                    childDirection = current_action + (childDirection,)
-                    frontier.push((childPoint, childDirection, childCost))
+        currentNude = frontier.pop()
+        currentPoint = getNodeXYPoint(currentNude)
+        explored.add(currentPoint)
 
+        if problem.isGoalState(currentPoint):
+            return buildSolution(currentNude, nodeToParentNode)
+
+        for child in problem.getSuccessors(currentPoint):
+            childPoint, childDirection, childCost = child
+            if childPoint not in explored and childPoint not in nodeToParentNode:
+                nodeToParentNode[childPoint] = currentNude
+                frontier.push(child)
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
