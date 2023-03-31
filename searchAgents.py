@@ -304,6 +304,7 @@ class CornersProblem(search.SearchProblem):
         """
         "*** YOUR CODE HERE ***"
         point, visited_corners = state
+        # goal is achieved when the current point is a corner, and we visited all the 4 corners
         return (point in self.corners) and len(visited_corners) == 4
 
     def getSuccessors(self, state):
@@ -329,13 +330,15 @@ class CornersProblem(search.SearchProblem):
             "*** YOUR CODE HERE ***"
             (x, y), visited_corners = state
             dx, dy = Actions.directionToVector(action)
+            # calculate the next_successor coordinate
             next_x, next_y = int(x + dx), int(y + dy)
             if not self.walls[next_x][next_y]:
-                next_state = (next_x, next_y)
-                if next_state in self.corners:
-                    if next_state not in visited_corners:
-                        visited_corners = visited_corners + (next_state,)
-                successors.append(((next_state, visited_corners), action, 1))
+                next_successor = (next_x, next_y)
+                if next_successor in self.corners:
+                    if next_successor not in visited_corners:
+                        # if the next_successor is a corner, and it was never visited it we add it to visited_corners
+                        visited_corners = visited_corners + (next_successor,)
+                successors.append(((next_successor, visited_corners), action, 1))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -352,7 +355,6 @@ class CornersProblem(search.SearchProblem):
             x, y = int(x + dx), int(y + dy)
             if self.walls[x][y]: return 999999
         return len(actions)
-
 
 def cornersHeuristic(state, problem):
     """
@@ -372,7 +374,7 @@ def cornersHeuristic(state, problem):
 
     "*** YOUR CODE HERE ***"
     point, visited_corners = state
-    if len(visited_corners) == 4:
+    if problem.isGoalState(state):
         return 0
 
     max_distance = 0
@@ -480,19 +482,19 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
-    position, foodGrid = state
+    position, food_grid = state
     "*** YOUR CODE HERE ***"
     if problem.isGoalState(state):
         return 0
 
-    foodAsList = foodGrid.asList()
-    maxDistance = 0
-    for foodPosition in foodAsList:
-        distance_from_corner = distance(position, foodPosition)
-        if distance_from_corner > maxDistance:
-            maxDistance = distance_from_corner
+    foodAsList = food_grid.asList()
+    max_distance = 0
+    for food_position in foodAsList:
+        distance_from_food = distance(position, food_position)
+        if distance_from_food > max_distance:
+            max_distance = distance_from_food
 
-    return maxDistance
+    return max_distance
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -523,6 +525,7 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
+        # use BFS to find  the shortest path to the closest food.
         return search.breadthFirstSearch(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -559,6 +562,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x, y = state
 
         "*** YOUR CODE HERE ***"
+        # check weather the state is food.
         return state in self.food.asList()
 
 def mazeDistance(point1, point2, gameState):

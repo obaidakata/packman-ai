@@ -64,7 +64,6 @@ class SearchProblem:
         """
         util.raiseNotDefined()
 
-
 def tinyMazeSearch(problem):
     """
     Returns a sequence of moves that solves tinyMaze.  For any other maze, the
@@ -74,7 +73,6 @@ def tinyMazeSearch(problem):
     s = Directions.SOUTH
     w = Directions.WEST
     return [s, s, w, s, w, w, s, w]
-
 
 def depthFirstSearch(problem):
     """
@@ -91,28 +89,34 @@ def depthFirstSearch(problem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
 
-    currentNude = problem.getStartState()
-    if problem.isGoalState(currentNude):
+    current_node = problem.getStartState()
+    if problem.isGoalState(current_node):
         return []
 
+    # LIFO data structure, contains the nodes which will be explored.
     frontier = util.Stack()
-    frontier.push(currentNude)
+    frontier.push(current_node)
+    # contains the nodes that already explored.
     explored = set()
-    nodeToParentNode = {}
+    # for node v, node_to_parent_node[v] returns the parent of v that helped us to explore v.
+    node_to_parent_node = {}
     while not frontier.isEmpty():
-        currentNude = frontier.pop()
-        currentPoint = getNodeXYPoint(currentNude)
-        explored.add(currentPoint)
+        current_node = frontier.pop()
+        # extract the point (x,y) from the node
+        current_point = get_node_point(current_node)
+        explored.add(current_point)
 
-        if problem.isGoalState(currentPoint):
-            return buildSolution(currentNude, nodeToParentNode)
+        # check whether the current point is a goal
+        if problem.isGoalState(current_point):
+            # return a list of actions required to traverse from the root to the goal.
+            return build_solution(current_node, node_to_parent_node)
 
-        for child in problem.getSuccessors(currentPoint):
-            (childPoint, _, _) = child
-            if childPoint not in explored:
-                nodeToParentNode[childPoint] = currentNude
+        for child in problem.getSuccessors(current_point):
+            (child_point, _, _) = child
+            if child_point not in explored:
+                # set current_node as the parent of the child node
+                node_to_parent_node[child_point] = current_node
                 frontier.push(child)
-
 
 def extracDirectionsFromPath(path_order):
     res = []
@@ -122,100 +126,130 @@ def extracDirectionsFromPath(path_order):
             res.append(nodeDirection)
     return res
 
-def getNodeXYPoint(node):
+def get_node_point(node):
     if type(node) is tuple:
         if len(node) == 2:
+            # node is (x, y)
             return node
         else:
+            # node is ((x, y), direction, cost)
             return node[0]
     else:
         return node
 
-def buildReveredListFromPath(goalNode, path):
-    currentNode = goalNode
-    pathOrder = []
+def buildReveredListFromPath(goal_node, path):
+    current_node = goal_node
+    path_order = []
     while True:
-        pathOrder.append(currentNode)
-        currentPoint = getNodeXYPoint(currentNode)
-        if currentPoint in path:
-            currentNode = path[currentPoint]
+        path_order.append(current_node)
+        current_point = get_node_point(current_node)
+        if current_point in path:
+            current_node = path[current_point]
         else:
             break
-    pathOrder.reverse()
-    return pathOrder
+    path_order.reverse()
+    return path_order
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    currentNude = problem.getStartState()
-    if problem.isGoalState(currentNude):
+    current_node = problem.getStartState()
+    if problem.isGoalState(current_node):
         return []
 
+    # FIFO data structure, contains the nodes which will be explored.
     frontier = util.Queue()
-    frontier.push(currentNude)
+    frontier.push(current_node)
+    # contains the nodes that already explored.
     explored = set()
-    nodeToParentNode = {}
+    # for node v, node_to_parent_node[v] returns the parent of v that helped us to explore v.
+    node_to_parent_node = {}
     while not frontier.isEmpty():
-        currentNude = frontier.pop()
-        currentPoint = getNodeXYPoint(currentNude)
-        explored.add(currentPoint)
+        current_node = frontier.pop()
+        # extract the point (x,y) from the node
+        current_point = get_node_point(current_node)
+        explored.add(current_point)
 
-        if problem.isGoalState(currentPoint):
-            return buildSolution(currentNude, nodeToParentNode)
+        # check whether the current point is a goal
+        if problem.isGoalState(current_point):
+            # return a list of actions required to traverse from the root to the goal.
+            return build_solution(current_node, node_to_parent_node)
 
-        for child in problem.getSuccessors(currentPoint):
-            childPoint, childDirection, childCost = child
-            if childPoint not in explored and childPoint not in nodeToParentNode:
-                nodeToParentNode[childPoint] = currentNude
+        for child in problem.getSuccessors(current_point):
+            (child_point, _, _) = child
+            # we check whether the child_point is already in node_to_parent_node because BFS the first path we found
+            # is shortest.
+            if child_point not in explored and child_point not in node_to_parent_node:
+                # set current_node as the parent of the child node
+                node_to_parent_node[child_point] = current_node
                 frontier.push(child)
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    currentNude = problem.getStartState()
-    currentNodeCost = 0
-
+    current_node = problem.getStartState()
+    current_node_cost = 0
+    # contains the nodes which will be explored, sorted by least cost.
     frontier = util.PriorityQueue()
+    frontier.push(current_node, current_node_cost)
+    # contains the nodes that already explored.
     explored = set()
-    nodeToParentNode = {}
-    nodeToNodeCost = {currentNude: currentNodeCost}
+    # for node v, node_to_parent_node[v] returns the parent of v that helped us to explore v.
+    node_to_parent_node = {}
+    # for node v, node_to_node_cost[v] returns the cost of v.
+    node_to_node_cost = {current_node: current_node_cost}
     while not frontier.isEmpty():
-        currentNude = frontier.pop()
-        currentPoint = getNodeXYPoint(currentNude)
-        currentNodeCost = nodeToNodeCost[currentPoint]
-        if problem.isGoalState(currentPoint):
-            return buildSolution(currentNude, nodeToParentNode)
-        explored.add(currentPoint)
+        current_node = frontier.pop()
+        # extract the point (x,y) from the node
+        current_point = get_node_point(current_node)
+        # extract the cost of current_node
+        current_node_cost = node_to_node_cost[current_point]
+        explored.add(current_point)
 
-        for child in problem.getSuccessors(currentPoint):
-            childPoint, childDirection, childCost = child
-            totalCost = childCost + currentNodeCost
-            if childPoint not in explored and not isNodeExistsInPriorityQueue(frontier, childPoint):
-                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
-                frontier.push(child, childCost + currentNodeCost)
-            elif existsPathWithHigherCost(frontier, childPoint, childCost):
-                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
-                frontier.update(child, childCost + currentNodeCost)
+        # check whether the current point is a goal
+        if problem.isGoalState(current_point):
+            # return a list of actions required to traverse from the root to the goal.
+            return build_solution(current_node, node_to_parent_node)
 
-def buildSolution(current_nude, node_to_parent_node):
+        for child in problem.getSuccessors(current_point):
+            child_point, _, child_cost = child
+            # the cost of node v equal to the cost of the path from starting node to the parent of v
+            # plus the cost of the edge (parent_v, v).
+            total_cost = child_cost + current_node_cost
+            if child_point not in explored and not do_node_exists_in_priorityQueue(frontier, child_point):
+                # update the path if we find a cheaper path from the starting point to the child.
+                update_path_if_needed(child_point, total_cost, current_node, node_to_parent_node, node_to_node_cost)
+                frontier.push(child, total_cost)
+            elif do_node_exists_with_higher_cost(frontier, child_point, child_cost):
+                # update the path if we find a cheaper path from the starting point to the child.
+                update_path_if_needed(child_point, total_cost, current_node, node_to_parent_node, node_to_node_cost)
+                frontier.update(child, total_cost)
+
+# builds the actions required to traverse from the root to the goal node.
+def build_solution(current_nude, node_to_parent_node):
     (currentPoint, currentDirection, _) = current_nude
     pathOrder = buildReveredListFromPath(currentPoint, node_to_parent_node)
     return [*extracDirectionsFromPath(pathOrder), currentDirection]
 
-def updatePathIfNeeded(child_point, total_cost, current_nude, node_to_parent_node,
-                       node_cost_from_start_state):
-    if child_point not in node_cost_from_start_state or \
-            node_cost_from_start_state[child_point] > total_cost:
+#
+def update_path_if_needed(child_point, total_cost, current_node, node_to_parent_node,
+                          node_cost_from_start_state):
+    # checks if we calculated the cost of the path from stating point before
+    should_update_path = child_point not in node_cost_from_start_state
+    # checks if the cost of the path from the starting_node to the child_node that passes through the current_node
+    # is cheaper than the previews path we found from starting_node to the child_node
+    should_update_path = should_update_path or node_cost_from_start_state[child_point] > total_cost
+    if should_update_path:
+        # if yes update the path and the path cost.
         node_cost_from_start_state[child_point] = total_cost
-        node_to_parent_node[child_point] = current_nude
-
-def isNodeExistsInPriorityQueue(priority_queue, childPoint):
+        node_to_parent_node[child_point] = current_node
+    return should_update_path
+def do_node_exists_in_priorityQueue(priority_queue, childPoint):
     allItems = [entry[2] for entry in priority_queue.heap]
     # # item is a tuple of (point, direction, cost),
     # # we keep only those whose point is equal to the point we are looking for.
     allChildrenFilter = [x for x in allItems if x[0] == childPoint]
     return len(allChildrenFilter) > 0
 
-
-def existsPathWithHigherCost(frontier, childPoint, childCost):
+def do_node_exists_with_higher_cost(frontier, childPoint, childCost):
     # # frontier.heap store tuples entries (priority, count, item), we extract the item.
     allItems = [entry[2] for entry in frontier.heap]
     # # item is a tuple of (point, direction, cost),
@@ -226,7 +260,6 @@ def existsPathWithHigherCost(frontier, childPoint, childCost):
         return oldChildCost > childCost
     return False
 
-
 def nullHeuristic(state, problem=None):
     """
     A heuristic function estimates the cost from the current state to the nearest
@@ -234,35 +267,48 @@ def nullHeuristic(state, problem=None):
     """
     return 0
 
-
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    currentNude = problem.getStartState()
-    currentNodeCost = 0
-
+    current_node = problem.getStartState()
+    current_node_cost = 0
+    # contains the nodes which will be explored, sorted by least cost.
     frontier = util.PriorityQueue()
-    frontier.push(currentNude, currentNodeCost)
+    frontier.push(current_node, current_node_cost)
+    # contains the nodes that already explored.
     explored = set()
-    nodeToParentNode = {}
-    nodeToNodeCost = {currentNude: currentNodeCost}
+    # for node v, node_to_parent_node[v] returns the parent of v that helped us to explore v.
+    node_to_parent_node = {}
+    # for node v, node_to_node_cost[v] returns the cost of v.
+    node_to_node_cost = {current_node: current_node_cost}
     while not frontier.isEmpty():
-        currentNude = frontier.pop()
-        currentPoint = getNodeXYPoint(currentNude)
-        currentNodeCost = nodeToNodeCost[currentPoint]
-        if problem.isGoalState(currentPoint):
-            return buildSolution(currentNude, nodeToParentNode)
-        explored.add(currentPoint)
+        current_node = frontier.pop()
+        # extract the point (x,y) from the node
+        current_point = get_node_point(current_node)
+        # extract the cost of current_node
+        current_node_cost = node_to_node_cost[current_point]
+        explored.add(current_point)
 
-        for child in problem.getSuccessors(currentPoint):
-            childPoint, childDirection, childCost = child
-            totalCost = childCost + currentNodeCost
-            heuristicEstimation = heuristic(childPoint, problem)
-            cost = totalCost + heuristicEstimation
-            if childPoint not in explored and not isNodeExistsInPriorityQueue(frontier, childPoint):
-                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
+        # check whether the current point is a goal
+        if problem.isGoalState(current_point):
+            # return a list of actions required to traverse from the root to the goal.
+            return build_solution(current_node, node_to_parent_node)
+
+        for child in problem.getSuccessors(current_point):
+            child_point, _, child_cost = child
+            total_cost = child_cost + current_node_cost
+            heuristic_estimation = heuristic(child_point, problem)
+            # the cost of node (v) is equal to the cost of the path from starting node to the parent of v
+            # plus the cost of the edge (v_parent, v)
+            # plus the heuristic estimation of v to the goal.
+            # cost(v) = cost(starting_point ~> v_parent) + cost(edge(v_parent, v)) + heuristic(v)
+            cost = total_cost + heuristic_estimation
+            if child_point not in explored and not do_node_exists_in_priorityQueue(frontier, child_point):
+                # update the path if we find a cheaper path from the starting point to the child.
+                update_path_if_needed(child_point, total_cost, current_node, node_to_parent_node, node_to_node_cost)
                 frontier.push(child, cost)
-            elif existsPathWithHigherCost(frontier, childPoint, childCost):
-                updatePathIfNeeded(childPoint, totalCost, currentNude, nodeToParentNode, nodeToNodeCost)
+            elif do_node_exists_with_higher_cost(frontier, child_point, child_cost):
+                # update the path if we find a cheaper path from the starting point to the child.
+                update_path_if_needed(child_point, total_cost, current_node, node_to_parent_node, node_to_node_cost)
                 frontier.update(child, cost)
 
 # Abbreviations
